@@ -12,8 +12,8 @@ PKG_VERSION:=2.3
 PKG_RELEASE:=1
 
 PKG_SOURCE:=atf-v$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://github.com/atf-builds/atf/releases/download/v$(PKG_VERSION)/atf-v$(PKG_VERSION).tar.gz?
-PKG_HASH:=bf352298743aed594cf2958dd588e06ab6713fc514bb6f809bf55a85a87134c1
+PKG_SOURCE_URL:=https://github.com/jayanta525/atf/releases/download/v$(PKG_VERSION)/atf-v$(PKG_VERSION).tar.gz?
+PKG_HASH:=c308f87617606812c865f4071e7717dab802130a3ccfecd79b1b8cbd712e9c9a
 
 PKG_LICENSE:=BSD-3-Clause
 PKG_LICENSE_FILES:=license.md
