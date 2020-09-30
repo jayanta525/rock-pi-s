@@ -31,6 +31,7 @@ define U-Boot/rock-pi-s-rk3308
   DEPENDS:=+PACKAGE_u-boot-rock-pi-s-rk3308:arm-trusted-firmware-rockchip
   PKG_BUILD_DEPENDS:=arm-trusted-firmware-rockchip
   ATF:=rk3308_bl31.elf
+  OF_BLOB:=$(1)
 endef
 
 # RK3328 boards
@@ -86,8 +87,16 @@ endef
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(STAGING_DIR_IMAGE)
-	$(CP) $(PKG_BUILD_DIR)/idbloader.img $(STAGING_DIR_IMAGE)/$(BUILD_VARIANT)-idbloader.img
-	$(CP) $(PKG_BUILD_DIR)/u-boot.itb $(STAGING_DIR_IMAGE)/$(BUILD_VARIANT)-u-boot.itb
+
+ifneq ($(OF_BLOB),)
+	$(CP) $(PKG_BUILD_DIR)/blobs/$(OF_BLOB)/idbloader.bin $(PKG_BUILD_DIR)/idbloader.bin
+	$(CP) $(PKG_BUILD_DIR)/blobs/$(OF_BLOB)/uboot.img $(PKG_BUILD_DIR)/uboot.img
+	$(CP) $(PKG_BUILD_DIR)/blobs/$(OF_BLOB)/trust.bin $(PKG_BUILD_DIR)/trust.bin
+endif
+
+	$(CP) $(PKG_BUILD_DIR)/idbloader.bin $(STAGING_DIR_IMAGE)/$(BUILD_VARIANT)-idbloader.bin
+	$(CP) $(PKG_BUILD_DIR)/uboot.img $(STAGING_DIR_IMAGE)/$(BUILD_VARIANT)-uboot.img
+	$(CP) $(PKG_BUILD_DIR)/trust.bin $(STAGING_DIR_IMAGE)/$(BUILD_VARIANT)-trust.bin
 endef
 
 define Package/u-boot/install/default
