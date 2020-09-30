@@ -1,0 +1,391 @@
+From f0b7b152649bdab095103cb5c349aa94737d01df Mon Sep 17 00:00:00 2001
+From: Jayantajit Gogoi <jayanta.gogoi525@gmail.com>
+Date: Sun, 27 Sep 2020 08:25:30 +0000
+Subject: [PATCH] rockchip: add basic support for RK3308 Radxa ROCK Pi S
+
+---
+ arch/arm64/boot/dts/rockchip/Makefile         |   1 +
+ .../boot/dts/rockchip/rk3308-rock-pi-s.dts    | 188 ++++++++++++++++++
+ arch/arm64/boot/dts/rockchip/rk3308.dtsi      |  32 +--
+ drivers/spi/spi-rockchip.c                    |   5 +-
+ 4 files changed, 210 insertions(+), 16 deletions(-)
+ create mode 100644 arch/arm64/boot/dts/rockchip/rk3308-rock-pi-s.dts
+
+diff --git a/arch/arm64/boot/dts/rockchip/Makefile b/arch/arm64/boot/dts/rockchip/Makefile
+index 3d011c4e61..d0f3d47fd6 100644
+--- a/arch/arm64/boot/dts/rockchip/Makefile
++++ b/arch/arm64/boot/dts/rockchip/Makefile
+@@ -1,5 +1,6 @@
+ # SPDX-License-Identifier: GPL-2.0
+ dtb-$(CONFIG_ARCH_ROCKCHIP) += px30-evb.dtb
++dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3308-rock-pi-s.dtb
+ dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3328-evb.dtb
+ dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3328-nanopi-r2s.dtb
+ dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3328-rock64.dtb
+diff --git a/arch/arm64/boot/dts/rockchip/rk3308-rock-pi-s.dts b/arch/arm64/boot/dts/rockchip/rk3308-rock-pi-s.dts
+new file mode 100644
+index 0000000000..f320e6ef4d
+--- /dev/null
++++ b/arch/arm64/boot/dts/rockchip/rk3308-rock-pi-s.dts
+@@ -0,0 +1,188 @@
++// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
++/*
++ * Copyright (c) 2019 Akash Gajjar <akash@openedev.com>
++ * Copyright (c) 2019 Jagan Teki <jagan@openedev.com>
++ */
++
++/dts-v1/;
++#include "rk3308.dtsi"
++
++/ {
++	model = "Radxa ROCK Pi S";
++	compatible = "radxa,rock-pi-s", "rockchip,rk3308";
++
++	chosen {
++		stdout-path = "serial0:1500000n8";
++	};
++
++	leds {
++		compatible = "gpio-leds";
++		pinctrl-names = "default";
++		pinctrl-0 = <&green_led_gio>, <&heartbeat_led_gpio>;
++
++		green-led {
++			label = "rockpis:green:power";
++			gpios = <&gpio0 RK_PA6 GPIO_ACTIVE_HIGH>;
++			linux,default-trigger = "default-on";
++			default-state = "on";
++		};
++
++		blue-led {
++			label = "rockpis:blue:user";
++			gpios = <&gpio0 RK_PA5 GPIO_ACTIVE_HIGH>;
++			default-state = "on";
++			linux,default-trigger = "heartbeat";
++		};
++	};
++
++	vcc5v0_sys: vcc5v0-sys {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc5v0_sys";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++	};
++
++	vdd_core: vdd-core {
++		compatible = "pwm-regulator";
++		pwms = <&pwm0 0 5000 1>;
++		regulator-name = "vdd_core";
++		regulator-min-microvolt = <827000>;
++		regulator-max-microvolt = <1340000>;
++		regulator-init-microvolt = <1015000>;
++		regulator-settling-time-up-us = <250>;
++		regulator-always-on;
++		regulator-boot-on;
++		pwm-supply = <&vcc5v0_sys>;
++	};
++
++	vcc_ddr: vcc-ddr {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc_ddr";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <1500000>;
++		regulator-max-microvolt = <1500000>;
++		vin-supply = <&vcc5v0_sys>;
++	};
++
++	vdd_log: vdd-log {
++		compatible = "regulator-fixed";
++		regulator-name = "vdd_log";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <1050000>;
++		regulator-max-microvolt = <1050000>;
++		vin-supply = <&vcc5v0_sys>;
++	};
++
++
++	vcc_1v8: vcc-1v8 {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc_1v8";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <1800000>;
++		regulator-max-microvolt = <1800000>;
++		vin-supply = <&vcc_io>;
++	};
++
++	vcc_io: vcc-io {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc_io";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		vin-supply = <&vcc5v0_sys>;
++	};
++
++	vcc_sd: vcc-sd {
++		compatible = "regulator-fixed";
++		gpio = <&gpio4 RK_PD6 GPIO_ACTIVE_LOW>;
++		regulator-name = "vcc_sd";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		regulator-always-on;
++		regulator-boot-on;
++		vin-supply = <&vcc_io>;
++	};
++
++	vcc_sdio: vcc-sdio {
++		compatible = "regulator-gpio";
++		regulator-name = "vcc_sdio";
++		regulator-min-microvolt = <1800000>;
++		regulator-max-microvolt = <3300000>;
++		states = <1800000 0x0
++			  3300000 0x1>;
++		vin-supply = <&vcc_io>;
++	};
++};
++
++&cpu0 {
++	cpu-supply = <&vdd_core>;
++};
++
++&emmc {
++	bus-width = <4>;
++	cap-mmc-highspeed;
++	mmc-hs200-1_8v;
++	disable-wp;
++	non-removable;
++	vmmc-supply = <&vcc_io>;
++	status = "okay";
++};
++
++&i2c1 {
++	status = "okay";
++};
++
++&pinctrl {
++	pinctrl-names = "default";
++	pinctrl-0 = <&rtc_32k>;
++
++	leds {
++		green_led_gio: green-led-gpio {
++			rockchip,pins = <0 RK_PA6 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++
++		heartbeat_led_gpio: heartbeat-led-gpio {
++			rockchip,pins = <0 RK_PA5 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
++};
++
++&pwm0 {
++	status = "okay";
++	pinctrl-0 = <&pwm0_pin_pull_down>;
++};
++
++&saradc {
++	vref-supply = <&vcc_1v8>;
++	status = "okay";
++};
++
++&sdmmc {
++	bus-width = <4>;
++	cap-mmc-highspeed;
++	cap-sd-highspeed;
++	max-frequeency = <150000000>;
++	disable-wp;
++	pinctrl-0 = <&sdmmc_clk &sdmmc_cmd &sdmmc_det &sdmmc_bus4>;
++	card-detect-delay = <800>;
++	vmmc-supply = <&vcc_sd>;
++	vqmmc-supply = <&vcc_sdio>;
++	status = "okay";
++};
++
++&spi2 {
++	status = "okay";
++	max-freq = <10000000>;
++};
++
++&uart0 {
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&uart0_xfer>;
++};
+diff --git a/arch/arm64/boot/dts/rockchip/rk3308.dtsi b/arch/arm64/boot/dts/rockchip/rk3308.dtsi
+index 8bdc66c629..e8b754d415 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3308.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3308.dtsi
+@@ -40,7 +40,7 @@
+ 
+ 		cpu0: cpu@0 {
+ 			device_type = "cpu";
+-			compatible = "arm,cortex-a35", "arm,armv8";
++			compatible = "arm,cortex-a35";
+ 			reg = <0x0 0x0>;
+ 			enable-method = "psci";
+ 			clocks = <&cru ARMCLK>;
+@@ -53,7 +53,7 @@
+ 
+ 		cpu1: cpu@1 {
+ 			device_type = "cpu";
+-			compatible = "arm,cortex-a35", "arm,armv8";
++			compatible = "arm,cortex-a35";
+ 			reg = <0x0 0x1>;
+ 			enable-method = "psci";
+ 			operating-points-v2 = <&cpu0_opp_table>;
+@@ -63,7 +63,7 @@
+ 
+ 		cpu2: cpu@2 {
+ 			device_type = "cpu";
+-			compatible = "arm,cortex-a35", "arm,armv8";
++			compatible = "arm,cortex-a35";
+ 			reg = <0x0 0x2>;
+ 			enable-method = "psci";
+ 			operating-points-v2 = <&cpu0_opp_table>;
+@@ -73,7 +73,7 @@
+ 
+ 		cpu3: cpu@3 {
+ 			device_type = "cpu";
+-			compatible = "arm,cortex-a35", "arm,armv8";
++			compatible = "arm,cortex-a35";
+ 			reg = <0x0 0x3>;
+ 			enable-method = "psci";
+ 			operating-points-v2 = <&cpu0_opp_table>;
+@@ -127,7 +127,7 @@
+ 	};
+ 
+ 	arm-pmu {
+-		compatible = "arm,cortex-a53-pmu";
++		compatible = "arm,cortex-a35-pmu";
+ 		interrupts = <GIC_SPI 83 IRQ_TYPE_LEVEL_HIGH>,
+ 			     <GIC_SPI 84 IRQ_TYPE_LEVEL_HIGH>,
+ 			     <GIC_SPI 85 IRQ_TYPE_LEVEL_HIGH>,
+@@ -513,7 +513,7 @@
+ 		status = "disabled";
+ 	};
+ 
+-	amba {
++	amba: bus {
+ 		compatible = "simple-bus";
+ 		#address-cells = <2>;
+ 		#size-cells = <2>;
+@@ -524,6 +524,7 @@
+ 			reg = <0x0 0xff2c0000 0x0 0x4000>;
+ 			interrupts = <GIC_SPI 0 IRQ_TYPE_LEVEL_HIGH>,
+ 				     <GIC_SPI 1 IRQ_TYPE_LEVEL_HIGH>;
++			arm,pl330-periph-burst;
+ 			clocks = <&cru ACLK_DMAC0>;
+ 			clock-names = "apb_pclk";
+ 			#dma-cells = <1>;
+@@ -534,6 +535,7 @@
+ 			reg = <0x0 0xff2d0000 0x0 0x4000>;
+ 			interrupts = <GIC_SPI 2 IRQ_TYPE_LEVEL_HIGH>,
+ 				     <GIC_SPI 3 IRQ_TYPE_LEVEL_HIGH>;
++			arm,pl330-periph-burst;
+ 			clocks = <&cru ACLK_DMAC1>;
+ 			clock-names = "apb_pclk";
+ 			#dma-cells = <1>;
+@@ -584,14 +586,14 @@
+ 		status = "disabled";
+ 	};
+ 
+-	sdmmc: dwmmc@ff480000 {
++	sdmmc: mmc@ff480000 {
+ 		compatible = "rockchip,rk3308-dw-mshc", "rockchip,rk3288-dw-mshc";
+ 		reg = <0x0 0xff480000 0x0 0x4000>;
+ 		interrupts = <GIC_SPI 76 IRQ_TYPE_LEVEL_HIGH>;
+ 		bus-width = <4>;
+ 		clocks = <&cru HCLK_SDMMC>, <&cru SCLK_SDMMC>,
+ 			 <&cru SCLK_SDMMC_DRV>, <&cru SCLK_SDMMC_SAMPLE>;
+-		clock-names = "biu", "ciu", "ciu-drv", "ciu-sample";
++		clock-names = "biu", "ciu", "ciu-drive", "ciu-sample";
+ 		fifo-depth = <0x100>;
+ 		max-frequency = <150000000>;
+ 		pinctrl-names = "default";
+@@ -599,27 +601,27 @@
+ 		status = "disabled";
+ 	};
+ 
+-	emmc: dwmmc@ff490000 {
++	emmc: mmc@ff490000 {
+ 		compatible = "rockchip,rk3308-dw-mshc", "rockchip,rk3288-dw-mshc";
+ 		reg = <0x0 0xff490000 0x0 0x4000>;
+ 		interrupts = <GIC_SPI 77 IRQ_TYPE_LEVEL_HIGH>;
+ 		bus-width = <8>;
+ 		clocks = <&cru HCLK_EMMC>, <&cru SCLK_EMMC>,
+ 			 <&cru SCLK_EMMC_DRV>, <&cru SCLK_EMMC_SAMPLE>;
+-		clock-names = "biu", "ciu", "ciu-drv", "ciu-sample";
++		clock-names = "biu", "ciu", "ciu-drive", "ciu-sample";
+ 		fifo-depth = <0x100>;
+ 		max-frequency = <150000000>;
+ 		status = "disabled";
+ 	};
+ 
+-	sdio: dwmmc@ff4a0000 {
++	sdio: mmc@ff4a0000 {
+ 		compatible = "rockchip,rk3308-dw-mshc", "rockchip,rk3288-dw-mshc";
+ 		reg = <0x0 0xff4a0000 0x0 0x4000>;
+ 		interrupts = <GIC_SPI 78 IRQ_TYPE_LEVEL_HIGH>;
+ 		bus-width = <4>;
+ 		clocks = <&cru HCLK_SDIO>, <&cru SCLK_SDIO>,
+ 			 <&cru SCLK_SDIO_DRV>, <&cru SCLK_SDIO_SAMPLE>;
+-		clock-names = "biu", "ciu", "ciu-drv", "ciu-sample";
++		clock-names = "biu", "ciu", "ciu-drive", "ciu-sample";
+ 		fifo-depth = <0x100>;
+ 		max-frequency = <150000000>;
+ 		pinctrl-names = "default";
+@@ -1629,7 +1631,7 @@
+ 		};
+ 
+ 		tsadc {
+-			tsadc_otp_gpio: tsadc-otp-gpio {
++			tsadc_otp_pin: tsadc-otp-pin {
+ 				rockchip,pins =
+ 					<0 RK_PB2 0 &pcfg_pull_none>;
+ 			};
+@@ -1657,7 +1659,7 @@
+ 					<2 RK_PA3 1 &pcfg_pull_none>;
+ 			};
+ 
+-			uart0_rts_gpio: uart0-rts-gpio {
++			uart0_rts_pin: uart0-rts-pin {
+ 				rockchip,pins =
+ 					<2 RK_PA3 0 &pcfg_pull_none>;
+ 			};
+@@ -1730,7 +1732,7 @@
+ 					<4 RK_PA7 1 &pcfg_pull_none>;
+ 			};
+ 
+-			uart4_rts_gpio: uart4-rts-gpio {
++			uart4_rts_pin: uart4-rts-pin {
+ 				rockchip,pins =
+ 					<4 RK_PA7 0 &pcfg_pull_none>;
+ 			};
+diff --git a/drivers/spi/spi-rockchip.c b/drivers/spi/spi-rockchip.c
+index 008b64f4e0..02e9205355 100644
+--- a/drivers/spi/spi-rockchip.c
++++ b/drivers/spi/spi-rockchip.c
+@@ -843,14 +843,17 @@ static const struct dev_pm_ops rockchip_spi_pm = {
+ };
+ 
+ static const struct of_device_id rockchip_spi_dt_match[] = {
+-	{ .compatible = "rockchip,rv1108-spi", },
++	{ .compatible = "rockchip,px30-spi", },
+ 	{ .compatible = "rockchip,rk3036-spi", },
+ 	{ .compatible = "rockchip,rk3066-spi", },
+ 	{ .compatible = "rockchip,rk3188-spi", },
+ 	{ .compatible = "rockchip,rk3228-spi", },
+ 	{ .compatible = "rockchip,rk3288-spi", },
++	{ .compatible = "rockchip,rk3308-spi", },
++	{ .compatible = "rockchip,rk3328-spi", },
+ 	{ .compatible = "rockchip,rk3368-spi", },
+ 	{ .compatible = "rockchip,rk3399-spi", },
++	{ .compatible = "rockchip,rv1108-spi", },
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(of, rockchip_spi_dt_match);

@@ -1,0 +1,88 @@
+From d9282fd7b580fba530109c58e1d341ef7c3ad181 Mon Sep 17 00:00:00 2001
+From: Jayantajit Gogoi <jayanta.gogoi525@gmail.com>
+Date: Wed, 30 Sep 2020 10:24:14 +0000
+Subject: [PATCH] rockchip: add mac node to rk3308 dtsi and rock-pi-s
+
+Signed-off-by: Jayantajit Gogoi <jayanta.gogoi525@gmail.com>
+---
+ .../boot/dts/rockchip/rk3308-rock-pi-s.dts    | 18 +++++++++++++++
+ arch/arm64/boot/dts/rockchip/rk3308.dtsi      | 23 +++++++++++++++++++
+ 2 files changed, 41 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/rockchip/rk3308-rock-pi-s.dts b/arch/arm64/boot/dts/rockchip/rk3308-rock-pi-s.dts
+index f320e6ef4d..bf782fd8ad 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3308-rock-pi-s.dts
++++ b/arch/arm64/boot/dts/rockchip/rk3308-rock-pi-s.dts
+@@ -98,6 +98,13 @@
+ 		vin-supply = <&vcc5v0_sys>;
+ 	};
+ 
++	vcc_phy: vcc-phy-regulator {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc_phy";
++		regulator-always-on;
++		regulator-boot-on;
++	};
++
+ 	vcc_sd: vcc-sd {
+ 		compatible = "regulator-fixed";
+ 		gpio = <&gpio4 RK_PD6 GPIO_ACTIVE_LOW>;
+@@ -138,6 +145,17 @@
+ 	status = "okay";
+ };
+ 
++&mac {
++	assigned-clocks = <&cru SCLK_MAC>;
++	assigned-clock-parents = <&cru SCLK_MAC_SRC>;
++	clock_in_out = "output";
++	phy-supply = <&vcc_phy>;
++	snps,reset-gpio = <&gpio0 RK_PA7 GPIO_ACTIVE_LOW>;
++	snps,reset-active-low;
++	snps,reset-delays-us = <0 50000 50000>;
++	status = "okay";
++};
++
+ &pinctrl {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&rtc_32k>;
+diff --git a/arch/arm64/boot/dts/rockchip/rk3308.dtsi b/arch/arm64/boot/dts/rockchip/rk3308.dtsi
+index e8b754d415..6e2f56ab05 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3308.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3308.dtsi
+@@ -20,6 +20,7 @@
+ 	#size-cells = <2>;
+ 
+ 	aliases {
++		ethernet0 = &mac;
+ 		i2c0 = &i2c0;
+ 		i2c1 = &i2c1;
+ 		i2c2 = &i2c2;
+@@ -629,6 +630,28 @@
+ 		status = "disabled";
+ 	};
+ 
++	mac: ethernet@ff4e0000 {
++		compatible = "rockchip,rk3308-gmac";
++		reg = <0x0 0xff4e0000 0x0 0x10000>;
++		rockchip,grf = <&grf>;
++		interrupts = <GIC_SPI 64 IRQ_TYPE_LEVEL_HIGH>;
++		interrupt-names = "macirq";
++		clocks = <&cru SCLK_MAC>, <&cru SCLK_MAC_RX_TX>,
++			 <&cru SCLK_MAC_RX_TX>, <&cru SCLK_MAC_REF>,
++			 <&cru SCLK_MAC>, <&cru ACLK_MAC>,
++			 <&cru PCLK_MAC>, <&cru SCLK_MAC_RMII>;
++		clock-names = "stmmaceth", "mac_clk_rx",
++			      "mac_clk_tx", "clk_mac_ref",
++			      "clk_mac_refout", "aclk_mac",
++			      "pclk_mac", "clk_mac_speed";
++		phy-mode = "rmii";
++		pinctrl-names = "default";
++		pinctrl-0 = <&rmii_pins &mac_refclk_12ma>;
++		resets = <&cru SRST_MAC_A>;
++		reset-names = "stmmaceth";
++		status = "disabled";
++	};
++
+ 	cru: clock-controller@ff500000 {
+ 		compatible = "rockchip,rk3308-cru";
+ 		reg = <0x0 0xff500000 0x0 0x1000>;
