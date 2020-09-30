@@ -47,6 +47,27 @@ define Build/pine64-img
 	dd if="$(STAGING_DIR_IMAGE)"/$(UBOOT_DEVICE_NAME)-u-boot.itb of="$@" seek=16384 conv=notrunc
 endef
 
+define Build/rockpis-img
+	# Creates the final SD/eMMC images, 
+	# combining boot partition, root partition as well as the u-boot bootloader
+
+	# Generate a new partition table in $@ with 32 MiB of 
+	# alignment padding for the idbloader and u-boot to fit:
+	# http://opensource.rock-chips.com/wiki_Boot_option#Boot_flow
+	#
+	# U-Boot SPL expects the U-Boot ITB to be located at sector 0x4000 (8 MiB) on the MMC storage
+	$(SCRIPT_DIR)/gen_image_generic.sh \
+		$@ \
+		$(CONFIG_TARGET_KERNEL_PARTSIZE) $@.boot \
+		$(CONFIG_TARGET_ROOTFS_PARTSIZE) $(IMAGE_ROOTFS) \
+		32768
+
+	# Copy the idbloader and the u-boot image to the image at sector 0x40 and 0x4000
+	dd if="$(STAGING_DIR_IMAGE)"/$(UBOOT_DEVICE_NAME)-idbloader.bin of="$@" seek=64 conv=notrunc
+	dd if="$(STAGING_DIR_IMAGE)"/$(UBOOT_DEVICE_NAME)-uboot.img of="$@" seek=16384 conv=notrunc
+	dd if="$(STAGING_DIR_IMAGE)"/$(UBOOT_DEVICE_NAME)-trust.bin of="$@" seek=24576 conv=notrunc
+endef
+
 ### Devices ###
 define Device/Default
   PROFILES := Default
