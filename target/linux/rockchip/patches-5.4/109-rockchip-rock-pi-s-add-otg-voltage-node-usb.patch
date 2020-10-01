@@ -1,0 +1,63 @@
+From d768026a2d86cd7dad11c2da9fad4b6627c39d6c Mon Sep 17 00:00:00 2001
+From: Jayantajit Gogoi <jayanta.gogoi525@gmail.com>
+Date: Thu, 1 Oct 2020 16:22:02 +0000
+Subject: [PATCH] rockchip: rk3308: add usb nodes and otg voltage node
+
+Signed-off-by: Jayantajit Gogoi <jayanta.gogoi525@gmail.com>
+---
+ .../boot/dts/rockchip/rk3308-rock-pi-s.dts    | 30 +++++++++++++++++++
+ 1 file changed, 30 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/rockchip/rk3308-rock-pi-s.dts b/arch/arm64/boot/dts/rockchip/rk3308-rock-pi-s.dts
+index bf782fd8ad..b890958f78 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3308-rock-pi-s.dts
++++ b/arch/arm64/boot/dts/rockchip/rk3308-rock-pi-s.dts
+@@ -44,6 +44,17 @@
+ 		regulator-max-microvolt = <5000000>;
+ 	};
+ 
++	vcc5v0_otg: vcc5v0-otg {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc5v0_otg";
++		regulator-always-on;
++		gpio = <&gpio0 RK_PC5 GPIO_ACTIVE_HIGH>;
++		enable-active-high;
++		pinctrl-names = "default";
++		pinctrl-0 = <&otg_vbus_drv>;
++		vin-supply = <&vcc5v0_sys>;
++	};
++
+ 	vdd_core: vdd-core {
+ 		compatible = "pwm-regulator";
+ 		pwms = <&pwm0 0 5000 1>;
+@@ -169,6 +180,12 @@
+ 			rockchip,pins = <0 RK_PA5 RK_FUNC_GPIO &pcfg_pull_none>;
+ 		};
+ 	};
++
++	usb {
++		otg_vbus_drv: otg-vbus-drv {
++			rockchip,pins = <0 RK_PC5 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
+ };
+ 
+ &pwm0 {
+@@ -204,3 +221,16 @@
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&uart0_xfer>;
+ };
++
++&usb20_otg {
++	dr_mode = "host";
++	status = "okay";
++};
++
++&usb_host0_ehci {
++	status = "okay";
++};
++
++&usb_host0_ohci{
++	status = "okay";
++};
+ Login with GitHub
